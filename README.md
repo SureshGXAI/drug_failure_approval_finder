@@ -56,8 +56,8 @@ the CLI at all.
 Run it either way - both are equivalent:
 
 ```bash
-python drug_failure_finder.py --query "EGFR"
-python -m drug_pipeline --query "EGFR"          # run from the directory containing drug_pipeline/
+python3 drug_failure_finder.py --query "EGFR"
+python3 -m drug_pipeline --query "EGFR"          # run from the directory containing drug_pipeline/
 ```
 
 ## PDF report
@@ -69,8 +69,8 @@ full CSV dump - meant for sharing or printing. The full column set is
 always in the matching CSV.
 
 ```bash
-python drug_failure_finder.py --query "EGFR" --pdf-output egfr_report.pdf
-python drug_failure_finder.py --query "EGFR" --skip-pdf   # skip building it
+python3 drug_failure_finder.py --query "EGFR" --pdf-output egfr_report.pdf
+python3 drug_failure_finder.py --query "EGFR" --skip-pdf   # skip building it
 ```
 
 `drug_pipeline/report.py` exposes `build_pdf(entity, module_rows, output_path)`
@@ -143,27 +143,27 @@ pip install streamlit pandas   # only needed for the web app (streamlit_app.py)
 
 ```bash
 # Basic: target by gene symbol
-python drug_failure_finder.py --query "EGFR"
+python3 drug_failure_finder.py --query "EGFR"
 
 # Basic: disease by name
-python drug_failure_finder.py --query "Alzheimer's disease"
+python3 drug_failure_finder.py --query "Alzheimer's disease"
 
 # Using stable IDs directly (skips the name-resolution search step)
-python drug_failure_finder.py --query ENSG00000146648   # target
-python drug_failure_finder.py --query EFO_0000270        # disease
+python3 drug_failure_finder.py --query ENSG00000146648   # target
+python3 drug_failure_finder.py --query EFO_0000270        # disease
 
 # Custom output filenames
-python drug_failure_finder.py --query "EGFR" \
+python3 drug_failure_finder.py --query "EGFR" \
     --output egfr_failed.csv \
     --approved-output egfr_approved.csv \
     --annotation-output egfr_annotation.csv \
     --ongoing-output egfr_ongoing.csv
 
 # Disease query, annotate top 10 associated targets instead of the default 5
-python drug_failure_finder.py --query "asthma" --top-targets 10
+python3 drug_failure_finder.py --query "asthma" --top-targets 10
 
 # Provide a DisGeNET API key (or set the DISGENET_API_KEY env var instead)
-python drug_failure_finder.py --query "EGFR" --disgenet-api-key YOUR_KEY_HERE
+python3 drug_failure_finder.py --query "EGFR" --disgenet-api-key YOUR_KEY_HERE
 ```
 
 ### Speed / scope flags
