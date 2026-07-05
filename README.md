@@ -114,22 +114,6 @@ All sources are free to use. Only DisGeNET requires registering for an API
 key; if you don't provide one, that column is simply left blank and every
 other module still runs normally.
 
-## How the modules work
-
-- **Module A (failed drugs)**: Open Targets → ChEMBL → ClinicalTrials.gov → PubMed → PubChem
-- **Module B (approved drugs)**: Open Targets → openFDA → PubMed → PubChem
-- **Module C (target annotation)**: UniProt → Reactome → DisGeNET
-  - If your input is a **target**, one row is produced for that target.
-  - If your input is a **disease**, Open Targets is used to find the top-N
-    targets associated with that disease (default N=5), and one row is
-    produced per target.
-- **Module D (ongoing clinical trials)**: Open Targets → ClinicalTrials.gov → PubMed → PubChem
-  - Lists drugs whose trial status is Recruiting, Not yet recruiting, Active
-    (not recruiting), or Enrolling by invitation — i.e. drugs still moving
-    through Phase I/II/III that haven't yet failed or been approved.
-  - Pulls the live overall status, sponsor, trial start date, and estimated
-    primary completion date straight from ClinicalTrials.gov.
-
 ## Installation
 
 Requires Python 3.8+.
