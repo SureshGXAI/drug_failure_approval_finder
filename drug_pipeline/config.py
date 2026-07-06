@@ -19,7 +19,7 @@ EUTILS_ESEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi
 EUTILS_ESUMMARY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
 PUBCHEM_PROPERTY_URL = (
     "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/"
-    "{}/property/MolecularFormula,CanonicalSMILES,MolecularWeight/JSON"
+    "{}/property/MolecularFormula,ConnectivitySMILES,SMILES,MolecularWeight/JSON"
 )
 UNIPROT_SEARCH_URL = "https://rest.uniprot.org/uniprotkb/search"
 REACTOME_PATHWAYS_URL = "https://reactome.org/ContentService/data/mapping/UniProt/{}/pathways"
