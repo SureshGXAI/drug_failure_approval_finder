@@ -14,6 +14,7 @@ or `pip install -e .` / add it to PYTHONPATH first.)
 
 import base64
 import io
+import re
 
 import pandas as pd
 import streamlit as st
@@ -26,6 +27,11 @@ from drug_pipeline.modules import (
 from drug_pipeline.cli import build_caches, make_partner_helpers
 
 st.set_page_config(page_title="Drug pipeline explorer", layout="wide")
+
+NCT_URL_TEMPLATE = "https://clinicaltrials.gov/study/{}"
+PUBMED_URL_TEMPLATE = "https://pubmed.ncbi.nlm.nih.gov/{}/"
+UNIPROT_URL_TEMPLATE = "https://www.uniprot.org/uniprotkb/{}/entry"
+PMID_REGEX = re.compile(r"PMID:(\d+)")
 
 
 # ---------------------------------------------------------------------------
@@ -56,6 +62,89 @@ def embed_pdf_preview(pdf_bytes: bytes, height: int = 600):
         f'height="{height}" style="border:none;"></iframe>',
         unsafe_allow_html=True,
     )
+
+
+def _first_url(cell) -> str:
+    """First URL out of a comma-joined 'Source URLs' cell, or ''."""
+    if not cell or not isinstance(cell, str):
+        return ""
+    parts = [p.strip() for p in cell.split(",") if p.strip()]
+    return parts[0] if parts else ""
+
+
+def _nct_ids_to_url(cell) -> str:
+    """Turn a 'Trial IDs (NCT)' cell into a clickable ClinicalTrials.gov URL
+    when it holds exactly one ID. Multiple IDs are left as-is (can't cram
+    more than one link into a single table cell)."""
+    if not cell or not isinstance(cell, str):
+        return cell or ""
+    ids = [i.strip() for i in cell.split(",") if i.strip()]
+    if len(ids) == 1:
+        return NCT_URL_TEMPLATE.format(ids[0])
+    return cell
+
+
+def _pubmed_url_from_reference(cell) -> str:
+    """Pull the PMID out of a 'PubMed Reference' cell (e.g. 'PMID:12345678 -
+    Some title (Journal 2024)') and turn it into a clickable PubMed URL."""
+    if not cell or not isinstance(cell, str):
+        return ""
+    m = PMID_REGEX.search(cell)
+    return PUBMED_URL_TEMPLATE.format(m.group(1)) if m else ""
+
+
+def clickable_view(df: pd.DataFrame):
+    """
+    Return (display_df, column_config) for st.dataframe(): a copy of `df`
+    where URL-bearing columns are turned into single clickable links, so
+    clicking a cell opens the original ClinicalTrials.gov trial or PubMed
+    article. The CSV download always uses the original, unmodified `df`.
+    """
+    display_df = df.copy()
+    column_config = {}
+
+    if "Source URLs" in display_df.columns:
+        display_df["Source URLs"] = display_df["Source URLs"].apply(_first_url)
+        column_config["Source URLs"] = st.column_config.LinkColumn(
+            "Source URLs", display_text="View study \u2197", width="small",
+        )
+
+    if "Trial IDs (NCT)" in display_df.columns:
+        display_df["Trial IDs (NCT)"] = display_df["Trial IDs (NCT)"].apply(_nct_ids_to_url)
+        column_config["Trial IDs (NCT)"] = st.column_config.LinkColumn(
+            "Trial IDs (NCT)", display_text=r"study/(NCT\d+)", width="small",
+        )
+
+    if "PubMed Reference" in display_df.columns:
+        pubmed_links = df["PubMed Reference"].apply(_pubmed_url_from_reference)
+        if pubmed_links.any():
+            insert_at = display_df.columns.get_loc("PubMed Reference") + 1
+            display_df.insert(insert_at, "PubMed Link", pubmed_links)
+            column_config["PubMed Link"] = st.column_config.LinkColumn(
+                "PubMed Link", display_text="View on PubMed \u2197", width="small",
+            )
+
+    return display_df, column_config
+
+
+def annotation_clickable_view(df: pd.DataFrame):
+    """Same idea as clickable_view(), but for the annotation table: turns
+    the UniProt Accession column into a clickable link to the UniProt entry."""
+    display_df = df.copy()
+    column_config = {}
+
+    if "UniProt Accession" in display_df.columns:
+        accessions = df["UniProt Accession"]
+        insert_at = display_df.columns.get_loc("UniProt Accession") + 1
+        display_df.insert(
+            insert_at, "UniProt Link",
+            accessions.apply(lambda a: UNIPROT_URL_TEMPLATE.format(a.strip()) if a else ""),
+        )
+        column_config["UniProt Link"] = st.column_config.LinkColumn(
+            "UniProt Link", display_text="View on UniProt \u2197", width="small",
+        )
+
+    return display_df, column_config
 
 
 # ---------------------------------------------------------------------------
@@ -194,22 +283,26 @@ else:
 
     with tab_failed:
         st.subheader("Failed, stopped, or discontinued drugs")
-        st.dataframe(failed_df, use_container_width=True)
+        display_df, col_cfg = clickable_view(failed_df)
+        st.dataframe(display_df, use_container_width=True, column_config=col_cfg)
         download_csv_button(failed_df, "Download CSV", "failed_drugs.csv", "dl_failed")
 
     with tab_approved:
         st.subheader("FDA-approved drugs")
-        st.dataframe(approved_df, use_container_width=True)
+        display_df, col_cfg = clickable_view(approved_df)
+        st.dataframe(display_df, use_container_width=True, column_config=col_cfg)
         download_csv_button(approved_df, "Download CSV", "approved_drugs.csv", "dl_approved")
 
     with tab_ongoing:
         st.subheader("Ongoing clinical trials")
-        st.dataframe(ongoing_df, use_container_width=True)
+        display_df, col_cfg = clickable_view(ongoing_df)
+        st.dataframe(display_df, use_container_width=True, column_config=col_cfg)
         download_csv_button(ongoing_df, "Download CSV", "ongoing_trials.csv", "dl_ongoing")
 
     with tab_annotation:
         st.subheader("Target biological annotation")
-        st.dataframe(annotation_df, use_container_width=True)
+        display_df, col_cfg = annotation_clickable_view(annotation_df)
+        st.dataframe(display_df, use_container_width=True, column_config=col_cfg)
         download_csv_button(annotation_df, "Download CSV", "target_annotation.csv", "dl_annotation")
 
     with tab_report:
